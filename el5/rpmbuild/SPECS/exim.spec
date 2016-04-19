@@ -436,6 +436,9 @@ test "$1"  = 0 || %{_initrddir}/clamd.exim condrestart >/dev/null || :
 %endif
 
 %changelog
+* Mon Apr 18 2016 Daniel Nisbet <daniel.nisbet@manchester.ac.uk> - 4.86-1
+- Update to 4.87-1 for UoM el5 servers
+
 * Fri Apr 15 2016 Daniel Nisbet <daniel.nisbet@manchester.ac.uk> - 4.86-2
 - Update to 4.86-2 for UoM servers
 
