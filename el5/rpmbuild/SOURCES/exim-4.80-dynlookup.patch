@@ -1,0 +1,24 @@
+diff -up exim-4.80/src/EDITME.dynlookup exim-4.80/src/EDITME
+--- exim-4.80/src/EDITME.dynlookup	2012-06-09 07:50:30.134845468 +0700
++++ exim-4.80/src/EDITME	2012-06-09 07:51:09.811716329 +0700
+@@ -300,14 +300,16 @@ LOOKUP_DSEARCH=yes
+ # LOOKUP_IBASE=yes
+ LOOKUP_LDAP=yes
+ LDAP_LIB_TYPE=OPENLDAP2
+-LOOKUP_INCLUDE=-I/usr/include/mysql
+-LOOKUP_LIBS=-lldap -llber -lsqlite3 -L/usr/$(_lib)/mysql -lmysqlclient -lpq
+-LOOKUP_MYSQL=yes
++LOOKUP_LIBS=-lldap -llber -lsqlite3
++LOOKUP_MYSQL_INCLUDE=-I/usr/include/mysql
++LOOKUP_MYSQL_LIBS=-L/usr/${_lib}/mysql -lmysqlclient
++LOOKUP_PGSQL_LIBS=-lpq
++LOOKUP_MYSQL=2
+ LOOKUP_NIS=yes
+ LOOKUP_NISPLUS=yes
+ # LOOKUP_ORACLE=yes
+ LOOKUP_PASSWD=yes
+-LOOKUP_PGSQL=yes
++LOOKUP_PGSQL=2
+ LOOKUP_SQLITE=yes
+ # LOOKUP_SQLITE_PC=sqlite3
+ # LOOKUP_WHOSON=yes

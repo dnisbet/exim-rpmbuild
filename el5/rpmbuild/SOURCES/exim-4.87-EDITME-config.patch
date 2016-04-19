@@ -1,0 +1,229 @@
+--- src/EDITME-orig	2016-04-18 11:49:12.000000000 +0100
++++ src/EDITME	2016-04-18 12:00:14.000000000 +0100
+@@ -98,7 +98,7 @@
+ # /usr/local/sbin. The installation script will try to create this directory,
+ # and any superior directories, if they do not exist.
+ 
+-BIN_DIRECTORY=/usr/exim/bin
++BIN_DIRECTORY=/usr/sbin
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -114,7 +114,7 @@
+ # don't exist. It will also install a default runtime configuration if this
+ # file does not exist.
+ 
+-CONFIGURE_FILE=/usr/exim/configure
++CONFIGURE_FILE=/etc/exim/exim.conf
+ 
+ # It is possible to specify a colon-separated list of files for CONFIGURE_FILE.
+ # In this case, Exim will use the first of them that exists when it is run.
+@@ -131,7 +131,7 @@
+ # deliveries. (Local deliveries run as various non-root users, typically as the
+ # owner of a local mailbox.) Specifying these values as root is not supported.
+ 
+-EXIM_USER=
++EXIM_USER=ref:exim
+ 
+ # If you specify EXIM_USER as a name, this is looked up at build time, and the
+ # uid number is built into the binary. However, you can specify that this
+@@ -241,9 +241,9 @@
+ # MBX, is included only when requested. If you do not know what this is about,
+ # leave these settings commented out.
+ 
+-# SUPPORT_MAILDIR=yes
+-# SUPPORT_MAILSTORE=yes
+-# SUPPORT_MBX=yes
++ SUPPORT_MAILDIR=yes
++ SUPPORT_MAILSTORE=yes
++ SUPPORT_MBX=yes
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -301,10 +301,10 @@
+ LOOKUP_LSEARCH=yes
+ LOOKUP_DNSDB=yes
+ 
+-# LOOKUP_CDB=yes
+-# LOOKUP_DSEARCH=yes
++ LOOKUP_CDB=yes
++ LOOKUP_DSEARCH=yes
+ # LOOKUP_IBASE=yes
+-# LOOKUP_LDAP=yes
++ LOOKUP_LDAP=yes
+ # LOOKUP_MYSQL=yes
+ # LOOKUP_NIS=yes
+ # LOOKUP_NISPLUS=yes
+@@ -333,7 +333,7 @@
+ # with Solaris 7 onwards. Uncomment whichever of these you are using.
+ 
+ # LDAP_LIB_TYPE=OPENLDAP1
+-# LDAP_LIB_TYPE=OPENLDAP2
++ LDAP_LIB_TYPE=OPENLDAP2
+ # LDAP_LIB_TYPE=NETSCAPE
+ # LDAP_LIB_TYPE=SOLARIS
+ 
+@@ -370,7 +370,7 @@
+ 
+ # LOOKUP_INCLUDE=-I /usr/local/ldap/include -I /usr/local/mysql/include -I /usr/local/pgsql/include
+ # LOOKUP_LIBS=-L/usr/local/lib -lldap -llber -lmysqlclient -lpq -lgds -lsqlite3
+-
++LOOKUP_LIBS=-lldap
+ 
+ #------------------------------------------------------------------------------
+ # Compiling the Exim monitor: If you want to compile the Exim monitor, a
+@@ -390,14 +390,14 @@
+ # and the MIME ACL. Please read the documentation to learn more about these
+ # features.
+ 
+-# WITH_CONTENT_SCAN=yes
++ WITH_CONTENT_SCAN=yes
+ 
+ # If you want to use the deprecated "demime" condition in the DATA ACL,
+ # uncomment the line below. Doing so will also explicitly turn on the
+ # WITH_CONTENT_SCAN option. If possible, use the MIME ACL instead of
+ # the "demime" condition.
+ 
+-# WITH_OLD_DEMIME=yes
++ WITH_OLD_DEMIME=yes
+ 
+ #------------------------------------------------------------------------------
+ # If you're using ClamAV and are backporting fixes to an old version, instead
+@@ -429,8 +429,8 @@
+ # from Exim.  Note it can only be supported when built with
+ # GnuTLS 3.1.3 or later, or OpenSSL
+ 
+-# DISABLE_OCSP=yes
+-
++ DISABLE_OCSP=yes
++ OPENSSL_NO_ECDH=yes
+ #------------------------------------------------------------------------------
+ # By default, Exim has support for checking the AD bit in a DNS response, to
+ # determine if DNSSEC validation was successful.  If your system libraries
+@@ -459,9 +459,9 @@
+ # installed on your system (www.libspf2.org). Depending on where it is installed
+ # you may have to edit the CFLAGS and LDFLAGS lines.
+ 
+-# EXPERIMENTAL_SPF=yes
+-# CFLAGS  += -I/usr/local/include
+-# LDFLAGS += -lspf2
++ EXPERIMENTAL_SPF=yes
++ CFLAGS  += -I/usr/local/include
++ LDFLAGS += -lspf2
+ 
+ # Uncomment the following lines to add SRS (Sender rewriting scheme) support.
+ # You need to have libsrs_alt installed on your system (srs.mirtol.com).
+@@ -474,9 +474,9 @@
+ 
+ # Uncomment the following line to add DMARC checking capability, implemented
+ # using libopendmarc libraries.  You must have SPF support enabled also.
+-# EXPERIMENTAL_DMARC=yes
+-# CFLAGS += -I/usr/local/include
+-# LDFLAGS += -lopendmarc
++ EXPERIMENTAL_DMARC=yes
++ CFLAGS += -I/usr/local/include
++ LDFLAGS += -lopendmarc
+ 
+ # Uncomment the following lines to add Brightmail AntiSpam support. You need
+ # to have the Brightmail client SDK installed. Please check the experimental
+@@ -492,7 +492,7 @@
+ # EXPERIMENTAL_DANE=yes
+ 
+ # Uncomment the following to include extra information in fail DSN message (bounces)
+-# EXPERIMENTAL_DSN_INFO=yes
++ EXPERIMENTAL_DSN_INFO=yes
+ 
+ ###############################################################################
+ #                 THESE ARE THINGS YOU MIGHT WANT TO SPECIFY                  #
+@@ -618,16 +618,16 @@
+ # included in the Exim binary. You will then need to set up the run time
+ # configuration to make use of the mechanism(s) selected.
+ 
+-# AUTH_CRAM_MD5=yes
++ AUTH_CRAM_MD5=yes
+ # AUTH_CYRUS_SASL=yes
+-# AUTH_DOVECOT=yes
++ AUTH_DOVECOT=yes
+ # AUTH_GSASL=yes
+ # AUTH_GSASL_PC=libgsasl
+ # AUTH_HEIMDAL_GSSAPI=yes
+ # AUTH_HEIMDAL_GSSAPI_PC=heimdal-gssapi
+-# AUTH_PLAINTEXT=yes
+-# AUTH_SPA=yes
+-# AUTH_TLS=yes
++ AUTH_PLAINTEXT=yes
++ AUTH_SPA=yes
++ AUTH_TLS=yes
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -730,11 +730,11 @@
+ # leave these settings commented out.
+ 
+ # This setting is required for any TLS support (either OpenSSL or GnuTLS)
+-# SUPPORT_TLS=yes
++ SUPPORT_TLS=yes
+ 
+ # Uncomment one of these settings if you are using OpenSSL; pkg-config vs not
+ # USE_OPENSSL_PC=openssl
+-# TLS_LIBS=-lssl -lcrypto
++ TLS_LIBS=-lssl -lcrypto
+ 
+ # Uncomment the first and either the second or the third of these if you
+ # are using GnuTLS.  If you have pkg-config, then the second, else the third.
+@@ -799,7 +799,7 @@
+ # Once you have done this, "make install" will build the info files and
+ # install them in the directory you have defined.
+ 
+-# INFO_DIRECTORY=/usr/share/info
++ INFO_DIRECTORY=/usr/share/info
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -812,7 +812,7 @@
+ # %s. This will be replaced by one of the strings "main", "panic", or "reject"
+ # to form the final file names. Some installations may want something like this:
+ 
+-# LOG_FILE_PATH=/var/log/exim_%slog
++ LOG_FILE_PATH=/var/log/exim/%s.log
+ 
+ # which results in files with names /var/log/exim_mainlog, etc. The directory
+ # in which the log files are placed must exist; Exim does not try to create
+@@ -932,8 +932,8 @@
+ # and localparts, per RFCs 5890, 6530 and 6533.
+ # You need to have the IDN library installed.
+ 
+-# SUPPORT_I18N=yes
+-# LDFLAGS += -lidn
++ SUPPORT_I18N=yes
++ LDFLAGS += -lidn
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -1075,7 +1075,7 @@
+ #------------------------------------------------------------------------------
+ # Uncomment this setting to include IPv6 support.
+ 
+-# HAVE_IPV6=yes
++ HAVE_IPV6=yes
+ 
+ ###############################################################################
+ #              THINGS YOU ALMOST NEVER NEED TO MENTION                        #
+@@ -1304,7 +1304,7 @@
+ # (process id) to a file so that it can easily be identified. The path of the
+ # file can be specified here. Some installations may want something like this:
+ 
+-# PID_FILE_PATH=/var/lock/exim.pid
++ PID_FILE_PATH=/var/run/exim.pid
+ 
+ # If PID_FILE_PATH is not defined, Exim writes a file in its spool directory
+ # using the name "exim-daemon.pid".
+@@ -1337,7 +1337,7 @@
+ # run time option is required to cause the moving actually to occur. Such
+ # messages become "invisible" to the normal management tools.
+ 
+-# SUPPORT_MOVE_FROZEN_MESSAGES=yes
++ SUPPORT_MOVE_FROZEN_MESSAGES=yes
+ 
+ 
+ #------------------------------------------------------------------------------

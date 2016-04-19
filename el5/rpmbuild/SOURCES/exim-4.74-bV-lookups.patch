@@ -1,0 +1,38 @@
+--- exim-4.70.lookup/src/exim.c 2009-11-06 13:18:19 +0100
++++ exim-4.70.lookup2/src/exim.c        2009-11-06 13:19:02 +0100
+@@ -976,6 +976,34 @@
+ #endif
+ fprintf(f, "\n");
+
++/* List of loadable lookup modules possible.
++   NOTE: this is not an real list of dl, to this point
++         in time the module was not yet tested!
++ */
++#ifdef LOOKUP_MODULE_DIR
++  DIR *dd;
++  struct dirent *ent;
++
++  dd = opendir(LOOKUP_MODULE_DIR);
++  if (dd != NULL) {
++    fprintf(f, "Lookups (as-module):");
++    while ((ent = readdir(dd)) != NULL) {
++      char *name = ent->d_name;
++      int len = (int)strlen(name);
++      /* The length of a name is be greater or equal than
++         length of 'cdb' module and the module must end as '.so'.
++       */
++      if ( len >= 3 + 3 && strncmp(name + (len-3), ".so", 3) == 0 ) {
++         /* Remove '.so' at the end of module name.
++          */
++         name[len-3] = '\0';
++         fprintf(f, " %s", name);
++      };
++    };
++  };
++  fprintf(f, "\n");
++#endif
++
+ fprintf(f, "Authenticators:");
+ #ifdef AUTH_CRAM_MD5
+   fprintf(f, " cram_md5");
+

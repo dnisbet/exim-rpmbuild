@@ -1,0 +1,36 @@
+diff -up exim-4.82/src/configure.default.smarts exim-4.82/src/configure.default
+--- exim-4.82/src/configure.default.smarts	2013-12-02 11:57:23.485271941 +0700
++++ exim-4.82/src/configure.default	2013-12-02 11:59:35.243232530 +0700
+@@ -797,6 +797,14 @@ begin transports
+ remote_smtp:
+   driver = smtp
+ 
++# This transport is used for delivering messages over SMTP using the
++# "message submission" port (RFC4409).
++
++remote_msa:
++  driver = smtp
++  port = 587
++  hosts_require_auth = *
++
+ # This transport invokes procmail to deliver mail
+ procmail:
+   driver = pipe
+@@ -922,6 +930,17 @@ begin rewrite
+ 
+ begin authenticators
+ 
++# This authenticator supports CRAM-MD5 username/password authentication
++# with Exim acting as a _client_, as it might when sending its outgoing
++# mail to a smarthost rather than directly to the final recipient.
++# Replace SMTPAUTH_USERNAME and SMTPAUTH_PASSWORD as appropriate.
++
++#client_auth:
++#  driver = cram_md5
++#  public_name = CRAM-MD5
++#  client_name = SMTPAUTH_USERNAME
++#  client_secret = SMTPAUTH_PASSWORD
++
+ # PLAIN authentication has no server prompts. The client sends its
+ # credentials in one lump, containing an authorization ID (which we do not
+ # use), an authentication ID, and a password. The latter two appear as

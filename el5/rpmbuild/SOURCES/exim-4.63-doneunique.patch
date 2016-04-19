@@ -1,0 +1,12 @@
+diff -up exim-4.63/src/deliver.c.doneunique exim-4.63/src/deliver.c
+--- exim-4.63/src/deliver.c.doneunique	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/src/deliver.c	2010-06-28 16:46:16.000000000 +0200
+@@ -624,7 +624,7 @@ for (dup = addr_duplicate; dup != NULL; 
+   {
+   if (Ustrcmp(addr->unique, dup->unique) == 0)
+     {
+-    tree_add_nonrecipient(dup->address);
++    tree_add_nonrecipient(dup->unique);
+     child_done(dup, now);
+     }
+   }

@@ -1,0 +1,97 @@
+#! /bin/sh
+# Copyright (c) 2002-2003 SuSE Linux AG, Nuernberg, Germany.
+# All rights reserved.
+#
+# Author: Peter Poeml <poeml@suse.de>
+#
+### BEGIN INIT INFO
+# Provides:			exim
+# Required-Start:		$local_fs $remote_fs $network
+# X-UnitedLinux-Should-Start:	$named $time greylistd
+# Required-Stop:
+# Default-Start:		3 5
+# Default-Stop:			0 1 2 6
+# Short-Description:		exim MTA
+# Description:			Start the exim MTA (mail transfer agent)
+### END INIT INFO
+
+EXIM_PID=/var/spool/exim/exim.pid
+EXIM_BIN=/usr/sbin/exim
+
+if [ -s /etc/sysconfig/exim ]; then 
+
+	. /etc/sysconfig/exim
+
+else 
+	# pre 8.0
+
+	# Source SuSE config
+	. /etc/rc.config
+
+	# Determine the base and follow a runlevel link name.
+	base=${0##*/}
+	link=${base#*[SK][0-9][0-9]}
+
+	# Force execution if not called by a runlevel directory.
+	test $link = $base && START_EXIM=yes
+	test "$START_EXIM" = yes || exit 0
+
+fi
+
+. /etc/rc.d/init.d/functions
+. /etc/sysconfig/network
+
+if [ "${NETWORKING}" = "no" ]; then
+  exit 0
+fi
+
+case "$1" in
+    start)
+	echo -n "Initializing SMTP port (exim)"
+	if [ -e $EXIM_PID ]; then
+		daemon --user=mail --pidfile $EXIM_PID $EXIM_BIN $EXIM_ARGS
+	else
+       		$EXIM_BIN $EXIM_ARGS
+	fi
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/exim
+	;;
+    stop)
+	echo -n "Shutting down SMTP port"
+	killproc -p $EXIM_PID $EXIM_BIN -TERM
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/exim
+	;;
+    test)
+	echo -n "Testing exim configuration"
+	$EXIM_BIN -bV
+	RETVAL=$?
+	;;
+    restart)
+	$0 stop
+	$0 start
+	RETVAL=$?
+	;;
+    reload|force-reload)
+	echo -n "Reload service exim"
+	kill -HUP `cat $EXIM_PID* 2>/dev/null` 2> /dev/null || true
+	RETVAL=$?
+	;;
+    status)
+	echo -n "Checking for service exim: "
+	status -p $EXIM_PID $EXIM_BIN
+	RETVAL=$?
+	;;
+    probe)
+	test /etc/exim/exim.conf -nt $EXIM_PID \
+	&& echo reload
+	RETVAL=$?
+	;;
+    *)
+	echo "Usage: $0 {start|stop|status|restart|force-reload|reload|probe}"
+	exit 1
+esac
+
+exit $RETVAL

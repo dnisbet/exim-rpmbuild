@@ -1,0 +1,12 @@
+diff -up exim-4.82/src/configure.default.local exim-4.82/src/configure.default
+--- exim-4.82/src/configure.default.local	2013-12-02 11:55:26.590276073 +0700
++++ exim-4.82/src/configure.default	2013-12-02 11:55:52.916254013 +0700
+@@ -54,7 +54,7 @@
+ # +local_domains, +relay_to_domains, and +relay_from_hosts, respectively. They
+ # are all colon-separated lists:
+ 
+-domainlist local_domains = @
++domainlist local_domains = @ : localhost : localhost.localdomain
+ domainlist relay_to_domains =
+ hostlist   relay_from_hosts = localhost
+ # (We rely upon hostname resolution working for localhost, because the default

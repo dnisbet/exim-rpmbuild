@@ -1,0 +1,18 @@
+diff -up exim-4.63/src/configure.default.localinterfaces exim-4.63/src/configure.default
+--- exim-4.63/src/configure.default.localinterfaces	2009-10-15 16:10:42.000000000 +0200
++++ exim-4.63/src/configure.default	2009-10-15 16:57:10.000000000 +0200
+@@ -165,6 +165,14 @@ daemon_smtp_ports = 25 : 465 : 587
+ tls_on_connect_ports = 465
+ 
+ 
++# Specify list of interface IP addresses on which to listen. Each item
++# may optionally also specify a port. By default, Exim listens on all
++# available interfaces.
++
++# Listen only on loopback interface
++local_interfaces = <; 127.0.0.1 ; ::1
++
++
+ # Specify the domain you want to be added to all unqualified addresses
+ # here. An unqualified address is one that does not contain an "@" character
+ # followed by a domain. For example, "caesar@rome.example" is a fully qualified

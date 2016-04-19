@@ -1,0 +1,1024 @@
+This is a backport of the following commits:
+
+commit c1d94452b1b7f3620ee3cc9aa197ad98821de79f
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sat Dec 11 13:44:55 2010 +0000
+
+    Don't allow a configure file which is writeable by the Exim user or group
+    
+    (Bug 1044, CVE-2010-4345)
+
+commit e2f5dc151e2e79058e93924e6d35510557f0535d
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sat Dec 11 14:09:17 2010 +0000
+
+    Check configure file permissions even for non-default files if still privileged
+    
+    (Bug 1044, CVE-2010-4345)
+
+commit cd25e41d2d044556e024f0292a17c5ec3cc7987b
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sat Dec 11 23:39:54 2010 +0000
+
+    Remove ALT_CONFIG_ROOT_ONLY build option, effectively making it always true.
+    
+    We *never* want the Exim user to be able to specify arbitrary configuration
+    files. Don't let them build it that way.
+    
+    (Bug 1044, CVE-2010-4345)
+
+commit 261dc43e32f6039781ca92535e56f5caaa68b809
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sun Dec 12 02:41:37 2010 +0000
+
+    Add TRUSTED_CONFIG_PREFIX_FILE option
+    
+    (Bug 1044, CVE-2010-4345)
+
+commit fa32850be0d9e605da1b33305c122f7a59a24650
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sun Dec 12 02:48:18 2010 +0000
+
+    Set FD_CLOEXEC on SMTP sockets after forking to handle the connection.
+
+commit 1e83d68b72d24d6255d2e78facbe01656515ab4f
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sun Dec 12 10:18:48 2010 +0000
+
+    Allow only absolute paths in TRUSTED_CONFIG_PREFIX_LIST, fix store leak
+
+commit 79d4bc3d95d75446a2d149ca35525f078a978027
+Author: Phil Pennock <pdp@exim.org>
+Date:   Tue Dec 14 00:30:30 2010 -0500
+
+    Change the default for system_filter_user.
+    
+    If the system filter needs to be run as root, let that be explicitly
+    configured.  The default is now the Exim run-time user.
+    
+    Document this, and a couple of other points, in IncompatibleChanges.
+
+commit d7177eb2021bc5517b2d8fab2269564f30d4446e
+Author: Phil Pennock <pdp@exim.org>
+Date:   Tue Dec 14 02:17:32 2010 -0500
+
+    Document the change to system_filter_user's default.
+
+commit a7cbbf501402231457e8167b6d446f4df454ba17
+Author: Phil Pennock <pdp@exim.org>
+Date:   Tue Dec 14 03:42:36 2010 -0500
+
+    Implement -D filtering, first pass.
+
+commit 2cfd322193567dbbeca47b0fc0ee2836f46e2600
+Author: Phil Pennock <pdp@exim.org>
+Date:   Tue Dec 14 20:02:24 2010 -0500
+
+    doc-txt updates for the security changes
+
+commit 66581d1e830f4e68f2b074b8d79a80645c6a72ea
+Author: Phil Pennock <pdp@exim.org>
+Date:   Wed Dec 15 02:43:33 2010 -0500
+
+    Implement -D whitelist invoking user restriction.
+    
+    Document WHITELIST_D_MACROS.
+
+commit 74935b987fd0312f535747fea636883ae22fec77
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Wed Dec 15 13:47:46 2010 +0000
+
+    Allow only Exim or CONFIGURE_OWNER to use whitelisted configs with -C
+    
+    We only added TRUSTED_CONFIG_PREFIX_FILE to compensate for the enforcing
+    of ALT_CONFIG_ROOT_ONLY. Let's not open it up any further than we need to;
+    other users don't get to make use of it.
+
+commit 90b6341f7282beed1175e942a113c30c212425c9
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Thu Dec 16 22:29:53 2010 +0000
+
+    Turn TRUSTED_CONFIG_PREFIX_LIST into TRUSTED_CONFIG_LIST. No prefix or regexes
+
+commit 7f7f05454657fe756dd06d2ee11bfe70c5a1a9a0
+Author: David Woodhouse <David.Woodhouse@intel.com>
+Date:   Sat Dec 18 23:22:17 2010 +0000
+
+    Make the documentation cleared that TRUSTED_CONFIG_LIST is pathname one per line
+
+commit cc5fdbc2db990d876fb7bfa68f9c7253d064cef7
+Author: Andreas Metzler <eximusers@downhill.at.eu.org>
+Date:   Tue Dec 21 15:40:42 2010 +0100
+
+    Do not refer to TRUSTED_CONFIG_PREFIX_FILE.
+    
+    Refer to TRUSTED_CONFIG_LIST instead of TRUSTED_CONFIG_PREFIX_FILE in
+    documentation and comments.
+
+diff -up exim-4.63/doc/NewStuff.privesc exim-4.63/doc/NewStuff
+--- exim-4.63/doc/NewStuff.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/doc/NewStuff	2011-01-06 13:59:04.395411851 +0100
+@@ -8,6 +8,31 @@ but have not yet made it into the main m
+ updated when there is a relatively large batch of changes). The doc/ChangeLog
+ file contains a listing of all changes, including bug fixes.
+ 
++
++Backported from version 4.73
++----------------------------
++
++1.  [POSSIBLE CONFIG BREAKAGE] The default value for system_filter_user is now
++    the Exim run-time user, instead of root.
++
++2.  [POSSIBLE CONFIG BREAKAGE] ALT_CONFIG_ROOT_ONLY is no longer optional and
++    is forced on.  This is mitigated by the new build option
++    TRUSTED_CONFIG_LIST which defines a list of configuration files which
++    are trusted; one per line. If a config file is owned by root and matches
++    a pathname in the list, then it may be invoked by the Exim build-time
++    user without Exim relinquishing root privileges.
++
++3.  [POSSIBLE CONFIG BREAKAGE] The Exim user is no longer automatically
++    trusted to supply -D<Macro[=Value]> overrides on the command-line.  Going
++    forward, we recommend using TRUSTED_CONFIG_LIST with shim configs that
++    include the main config.  As a transition mechanism, we are temporarily
++    providing a work-around: the new build option WHITELIST_D_MACROS provides
++    a colon-separated list of macro names which may be overriden by the Exim
++    run-time user.  The values of these macros are constrained to the regex
++    ^[A-Za-z0-9_/.-]*$ (which explicitly does allow for empty values).
++
++
++
+ Version 4.63
+ ------------
+ 
+diff -up exim-4.63/doc/exim.8.privesc exim-4.63/doc/exim.8
+--- exim-4.63/doc/exim.8.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/doc/exim.8	2011-01-10 18:54:52.083139361 +0100
+@@ -615,19 +615,18 @@ name, but it can be a colon\-separated l
+ file that exists is used. Failure to open an existing file stops Exim from
+ proceeding any further along the list, and an error is generated.
+ 
+-When this option is used by a caller other than root or the Exim user, and the
+-list is different from the compiled\-in list, Exim gives up its root privilege
+-immediately, and runs with the real and effective uid and gid set to those of
+-the caller. However, if ALT_CONFIG_ROOT_ONLY is defined in
+-Local/Makefile, root privilege is retained for \fB\-C\fP only if the caller of
+-Exim is root.
+-
+-That is, the Exim user is no longer privileged in this regard. This build\-time
+-option is not set by default in the Exim source distribution tarbundle.
+-However, if you are using a "packaged" version of Exim (source or binary),
+-the packagers might have enabled it.
++When this option is used by a caller other than root, and the list is
++different from the compiled\-in list, Exim gives up its root privilege
++immediately, and runs with the real and effective uid and gid set to those
++of the caller. However, if a TRUSTED_CONFIG_LIST file is defined in
++Local/Makefile, that file contains a list of full pathnames, one per line,
++for configuration files which are trusted. Root privilege is retained for
++any configuration file so listed, as long as the caller is the Exim user
++(or the user specified in the CONFIGURE_OWNER option, if any), and as long
++as the configuration file is not writeable by inappropriate users or
++groups.
+ 
+-Setting ALT_CONFIG_ROOT_ONLY locks out the possibility of testing a
++Leaving TRUSTED_CONFIG_LIST unset precludes the possibility of testing a
+ configuration using \fB\-C\fP right through message reception and delivery, even
+ if the caller is root. The reception works, but by that time, Exim is running
+ as the Exim user, so when it re\-executes to regain privilege for the delivery,
+@@ -660,6 +659,14 @@ unprivileged caller, it causes Exim to g
+ If DISABLE_D_OPTION is defined in Local/Makefile, the use of \fB\-D\fP is
+ completely disabled, and its use causes an immediate error exit.
+ 
++If WHITELIST_D_MACROS is defined in Local/Makefile then it should be a
++colon-separated list of macros which are considered safe and, if \fB\-D\fP only
++supplies macros from this list, and the values are acceptable, then Exim
++will not give up root privilege if the caller is root, the Exim run-time
++user, or the CONFIGURE_OWNER, if set.  This is a transition mechanism and
++is expected to be removed in the future.  Acceptable values for the macros
++satisfy the regexp: \fB^[A\-Za\-z0\-9_/.\-]*$\fP
++
+ The entire option (including equals sign if present) must all be within one
+ command line item. \fB\-D\fP can be used to set the value of a macro to the empty
+ string, in which case the equals sign is optional. These two commands are
+diff -up exim-4.63/doc/spec.txt.privesc exim-4.63/doc/spec.txt
+--- exim-4.63/doc/spec.txt.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/doc/spec.txt	2011-01-06 14:34:31.587466859 +0100
+@@ -3169,26 +3169,25 @@ brief message about itself and exits.
+     first file that exists is used. Failure to open an existing file stops Exim
+     from proceeding any further along the list, and an error is generated.
+ 
+-    When this option is used by a caller other than root or the Exim user, and
+-    the list is different from the compiled-in list, Exim gives up its root
+-    privilege immediately, and runs with the real and effective uid and gid set
+-    to those of the caller. However, if ALT_CONFIG_ROOT_ONLY is defined in
+-    Local/Makefile, root privilege is retained for -C only if the caller of
+-    Exim is root.
+-
+-    That is, the Exim user is no longer privileged in this regard. This
+-    build-time option is not set by default in the Exim source distribution
+-    tarbundle. However, if you are using a "packaged" version of Exim (source
+-    or binary), the packagers might have enabled it.
++    When this option is used by a caller other than root, and the list is
++    different from the compiled-in list, Exim gives up its root privilege
++    immediately, and runs with the real and effective uid and gid set to those
++    of the caller. However, if a TRUSTED_CONFIG_LIST file is defined in
++    Local/Makefile, that file contains a list of full pathnames, one per line,
++    for configuration files which are trusted. Root privilege is retained for
++    any configuration file so listed, as long as the caller is the Exim user
++    (or the user specified in the CONFIGURE_OWNER option, if any), and as long
++    as the configuration file is not writeable by inappropriate users or
++    groups.
+ 
+-    Setting ALT_CONFIG_ROOT_ONLY locks out the possibility of testing a
++    Leaving TRUSTED_CONFIG_LIST unset precludes the possibility of testing a
+     configuration using -C right through message reception and delivery, even
+     if the caller is root. The reception works, but by that time, Exim is
+     running as the Exim user, so when it re-executes to regain privilege for
+     the delivery, the use of -C causes privilege to be lost. However, root can
+     test reception and delivery using two separate commands (one to put a
+-    message on the queue, using -odq, and another to do the delivery, using -M
+-    ).
++    message on the queue, using -odq, and another to do the delivery, using
++    -M).
+ 
+     If ALT_CONFIG_PREFIX is defined in Local/Makefile, it specifies a prefix
+     string with which any file named in a -C command line option must start. In
+@@ -3217,6 +3216,14 @@ brief message about itself and exits.
+     is defined in Local/Makefile, the use of -D is completely disabled, and its
+     use causes an immediate error exit.
+ 
++    If WHITELIST_D_MACROS is defined in Local/Makefile then it should be a
++    colon-separated list of macros which are considered safe and, if -D only
++    supplies macros from this list, and the values are acceptable, then Exim
++    will not give up root privilege if the caller is root, the Exim run-time
++    user, or the CONFIGURE_OWNER, if set.  This is a transition mechanism and
++    is expected to be removed in the future.  Acceptable values for the macros
++    satisfy the regexp: ^[A-Za-z0-9_/.-]*$
++
+     The entire option (including equals sign if present) must all be within one
+     command line item. -D can be used to set the value of a macro to the empty
+     string, in which case the equals sign is optional. These two commands are
+@@ -4139,17 +4146,22 @@ a colon-separated list of file names, in
+ existing file in the list.
+ 
+ The run time configuration file must be owned by root or by the user that is
+-specified at compile time by the EXIM_USER option, or by the user that is
+ specified at compile time by the CONFIGURE_OWNER option (if set). The
+-configuration file must not be world-writeable or group-writeable, unless its
+-group is the one specified at compile time by the EXIM_GROUP option or by the
++configuration file must not be world-writeable, or group-writeable unless its
++group is the root group or the one specified at compile time by the
+ CONFIGURE_GROUP option.
+ 
+ Warning: In a conventional configuration, where the Exim binary is setuid to
+ root, anybody who is able to edit the run time configuration file has an easy
+-way to run commands as root. If you make your mail administrators members of
+-the Exim group, but do not trust them with root, make sure that the run time
+-configuration is not group writeable.
++way to run commands as root. easy way to run commands as root. If you specify a
++user or group in the CONFIGURE_OWNER or CONFIGURE_GROUP options, then that user
++and/or any users who are members of that group will trivially be able to obtain
++root privileges.
++
++Up to Exim version 4.72, the run time configuration file was also permitted to
++be writeable by the Exim user and/or group. That has been changed in Exim 4.73
++(and backported into this version) since it offered a simple privilege
++escalation for any attacker who managed to compromise the Exim user account.
+ 
+ A default configuration file, which will work correctly in simple situations,
+ is provided in the file src/configure.default. If CONFIGURE_FILE defines just
+@@ -4164,21 +4176,23 @@ discussion of the default configuration.
+ 
+ A one-off alternate configuration can be specified by the -C command line
+ option, which may specify a single file or a list of files. However, when -C is
+-used, Exim gives up its root privilege, unless called by root or the Exim user
+-(or unless the argument for -C is identical to the built-in value from
+-CONFIGURE_FILE). -C is useful mainly for checking the syntax of configuration
+-files before installing them. No owner or group checks are done on a
+-configuration file specified by -C.
+-
+-The privileged use of -C by the Exim user can be locked out by setting
+-ALT_CONFIG_ROOT_ONLY in Local/Makefile when building Exim. However, if you do
+-this, you also lock out the possibility of testing a configuration using -C
+-right through message reception and delivery, even if the caller is root. The
+-reception works, but by that time, Exim is running as the Exim user, so when it
+-re-execs to regain privilege for the delivery, the use of -C causes privilege
+-to be lost. However, root can test reception and delivery using two separate
+-commands (one to put a message on the queue, using -odq, and another to do the
+-delivery, using -M).
++used, Exim gives up its root privilege, unless called by root (or unless the
++argument for -C is identical to the built-in value from CONFIGURE_FILE), or is
++listed in the TRUSTED_CONFIG_LIST file and the caller is the Exim user or the
++user specified in the CONFIGURE_OWNER setting. -C is useful mainly for checking
++the syntax of configuration files before installing them. No owner or group
++checks are done on a configuration file specified by -C, if root privilege has
++been dropped.
++
++Even the Exim user is not trusted to specify an arbitrary configuration file
++with the -C option to be used with root privileges, unless that file is listed
++in the TRUSTED_CONFIG_LIST file. This locks out the possibility of testing a
++configuration using -C right through message reception and delivery, even if
++the caller is root. The reception works, but by that time, Exim is running as
++the Exim user, so when it re-execs to regain privilege for the delivery, the
++use of -C causes privilege to be lost. However, root can test reception and
++delivery using two separate commands (one to put a message on the queue, using
++-odq, and another to do the delivery, using -M).
+ 
+ If ALT_CONFIG_PREFIX is defined in Local/Makefile, it specifies a prefix string
+ with which any file named in a -C command line option must start. In addition,
+@@ -4192,6 +4206,15 @@ non-privileged user causes Exim to disca
+ DISABLE_D_OPTION is defined in Local/Makefile, the use of -D is completely
+ disabled, and its use causes an immediate error exit.
+ 
++The WHITELIST_D_MACROS option in Local/Makefile permits the binary builder to
++declare certain macro names trusted, such that root privilege will not
++necessarily be discarded. WHITELIST_D_MACROS defines a colon-separated list of
++macros which are considered safe and, if -D only supplies macros from this
++list, and the values are acceptable, then Exim will not give up root privilege
++if the caller is root, the Exim run-time user, or the CONFIGURE_OWNER, if set.
++This is a transition mechanism and is expected to be removed in the future.
++Acceptable values for the macros satisfy the regexp: ^[A-Za-z0-9_/.-]*$
++
+ Some sites may wish to use the same Exim binary on different machines that
+ share a file system, but to use different configuration files on each machine.
+ If CONFIGURE_FILE_USE_NODE is defined in Local/Makefile, Exim first looks for a
+@@ -13617,18 +13640,17 @@ used in a system filter.
+ |system_filter_user|Use: main|Type: string|Default: unset|
+ +--------------------------------------------------------+
+ 
+-If this option is not set, the system filter is run in the main Exim delivery
+-process, as root. When the option is set, the system filter runs in a separate
+-process, as the given user. Unless the string consists entirely of digits, it
+-is looked up in the password data. Failure to find the named user causes a
+-configuration error. The gid is either taken from the password data, or
+-specified by system_filter_group. When the uid is specified numerically,
+-system_filter_group is required to be set.
++If this option is set to root, the system filter is run in the main Exim
++delivery process, as root.  Otherwise, the system filter runs in a separate
++process, as the given user, defaulting to the Exim run-time user. Unless the
++string consists entirely of digits, it is looked up in the password data.
++Failure to find the named user causes a configuration error. The gid is either
++taken from the password data, or specified by system_filter_group. When the uid
++is specified numerically, system_filter_group is required to be set.
+ 
+ If the system filter generates any pipe, file, or reply deliveries, the uid
+ under which the filter is run is used when transporting them, unless a
+-transport option overrides. Normally you should set system_filter_user if your
+-system filter generates these kinds of delivery.
++transport option overrides.
+ 
+ +-------------------------------------------------+
+ |tcp_nodelay|Use: main|Type: boolean|Default: true|
+@@ -30358,15 +30380,25 @@ penetrated the Exim (but not the root) a
+     Exim account from running a privileged Exim with an arbitrary configuration
+     file, and using it to break into other accounts.
+ 
+-  * If ALT_CONFIG_ROOT_ONLY is defined, root privilege is retained for -C and
+-    -D only if the caller of Exim is root. Without it, the Exim user may also
+-    use -C and -D and retain privilege. Setting this option locks out the
+-    possibility of testing a configuration using -C right through message
+-    reception and delivery, even if the caller is root. The reception works,
+-    but by that time, Exim is running as the Exim user, so when it re-execs to
+-    regain privilege for the delivery, the use of -C causes privilege to be
+-    lost. However, root can test reception and delivery using two separate
+-    commands. ALT_CONFIG_ROOT_ONLY is not set by default.
++  * If a non-trusted configuration file (i.e. not the default configuration
++    file or one which is trusted by virtue of being listed in the
++    TRUSTED_CONFIG_LIST file) is specified with -C, or if macros are given with
++    -D (but see the next item), then root privilege is retained only if the
++    caller of Exim is root. This locks out the possibility of testing a
++    configuration using -C right through message reception and delivery, even
++    if the caller is root. The reception works, but by that time, Exim is
++    running as the Exim user, so when it re-execs to regain privilege for the
++    delivery, the use of -C causes privilege to be lost. However, root can test
++    reception and delivery using two separate commands.
++
++  * The WHITELIST_D_MACROS build option declares some macros to be safe to
++    override with -D if the real uid is one of root, the Exim run-time user or
++    the CONFIGURE_OWNER, if defined.  The potential impact of this option is
++    limited by requiring the run-time value supplied to -D to match a regex
++    that errs on the restrictive side.  Requiring build-time selection of safe
++    macros is onerous but this option is intended solely as a transition
++    mechanism to permit previously-working configurations to continue to work
++    after release 4.73.
+ 
+   * If DISABLE_D_OPTION is defined, the use of the -D command line option is
+     disabled.
+@@ -30415,11 +30447,12 @@ uid and gid in the following cases:
+ 
+   * If the -C option is used to specify an alternate configuration file, or if
+     the -D option is used to define macro values for the configuration, and the
+-    calling process is not running as root or the Exim user, the uid and gid
+-    are changed to those of the calling process. However, if
+-    ALT_CONFIG_ROOT_ONLY is defined in Local/Makefile, only root callers may
+-    use -C and -D without losing privilege, and if DISABLE_D_OPTION is set, the
+-    -D option may not be used at all.
++    calling process is not running as root, the uid and gid are changed to
++    those of the calling process. However, if DISABLE_D_OPTION is defined in
++    Local/Makefile, the -D option may not be used at all. If WHITELIST_D_MACROS
++    is defined in Local/Makefile, then some macro values can be supplied if the
++    calling process is running as root, the Exim run-time user or
++    CONFIGURE_OWNER, if defined.
+ 
+   * If the expansion test option (-be) or one of the filter testing options (
+     -bf or -bF) are used, the uid and gid are changed to those of the calling
+diff -up exim-4.63/src/EDITME.privesc exim-4.63/src/EDITME
+--- exim-4.63/src/EDITME.privesc	2011-01-06 13:47:24.698116250 +0100
++++ exim-4.63/src/EDITME	2011-01-06 13:47:24.745118082 +0100
+@@ -399,14 +399,13 @@ FIXED_NEVER_USERS=root
+ 
+ 
+ #------------------------------------------------------------------------------
+-# By default, Exim insists that its configuration file be owned either by root
+-# or by the Exim user. You can specify one additional permitted owner here.
++# By default, Exim insists that its configuration file be owned by root. You
++# can specify one additional permitted owner here.
+ 
+ # CONFIGURE_OWNER=
+ 
+ # If the configuration file is group-writeable, Exim insists by default that it
+-# is owned by root or the Exim user. You can specify one additional permitted
+-# group owner here.
++# is owned by root. You can specify one additional permitted group owner here.
+ 
+ # CONFIGURE_GROUP=
+ 
+@@ -428,32 +427,31 @@ FIXED_NEVER_USERS=root
+ 
+ #------------------------------------------------------------------------------
+ # The -C option allows Exim to be run with an alternate runtime configuration
+-# file. When this is used by root or the Exim user, root privilege is retained
+-# by the binary (for any other caller, it is dropped). You can restrict the
+-# location of alternate configurations by defining a prefix below. Any file
+-# used with -C must then start with this prefix (except that /dev/null is also
+-# permitted if the caller is root, because that is used in the install script).
+-# If the prefix specifies a directory that is owned by root, a compromise of
+-# the Exim account does not permit arbitrary alternate configurations to be
+-# used. The prefix can be more restrictive than just a directory (the second
+-# example).
++# file. When this is used by root, root privilege is retained by the binary
++# (for any other caller including the Exim user, it is dropped). You can
++# restrict the location of alternate configurations by defining a prefix below.
++# Any file used with -C must then start with this prefix (except that /dev/null
++# is also permitted if the caller is root, because that is used in the install
++# script). If the prefix specifies a directory that is owned by root, a
++# compromise of the Exim account does not permit arbitrary alternate
++# configurations to be used. The prefix can be more restrictive than just a
++# directory (the second example).
+ 
+ # ALT_CONFIG_PREFIX=/some/directory/
+ # ALT_CONFIG_PREFIX=/some/directory/exim.conf-
+ 
+ 
+ #------------------------------------------------------------------------------
+-# If you uncomment the following line, only root may use the -C or -D options
+-# without losing root privilege. The -C option specifies an alternate runtime
+-# configuration file, and the -D option changes macro values in the runtime
+-# configuration. Uncommenting this line restricts what can be done with these
+-# options. A call to receive a message (either one-off or via a daemon) cannot
+-# successfully continue to deliver it, because the re-exec of Exim to regain
+-# root privilege will fail, owing to the use of -C or -D by the Exim user.
+-# However, you can still use -C for testing (as root) if you do separate Exim
+-# calls for receiving a message and subsequently delivering it.
++# When a user other than root uses the -C option to override the configuration
++# file (including the Exim user when re-executing Exim to regain root
++# privileges for local message delivery), this will normally cause Exim to
++# drop root privileges. The TRUSTED_CONFIG_LIST option, specifies a file which
++# contains a list of trusted configuration filenames, one per line. If the -C
++# option is used by the Exim user or by the user specified in the
++# CONFIGURE_OWNER setting, to specify a configuration file which is listed in
++# the TRUSTED_CONFIG_LIST file, then root privileges are not dropped by Exim.
+ 
+-# ALT_CONFIG_ROOT_ONLY=yes
++# TRUSTED_CONFIG_LIST=/usr/exim/trusted_configs
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -465,6 +463,31 @@ FIXED_NEVER_USERS=root
+ 
+ 
+ #------------------------------------------------------------------------------
++# By contrast, you might be maintaining a system which relies upon the ability
++# to override values with -D and assumes that these will be passed through to
++# the delivery processes.  As of Exim 4.73, this is no longer the case by
++# default.  Going forward, we strongly recommend that you use a shim Exim
++# configuration file owned by root stored under TRUSTED_CONFIG_LIST.
++# That shim can set macros before .include'ing your main configuration file.
++#
++# As a strictly transient measure to ease migration to 4.73, the
++# WHITELIST_D_MACROS value definies a colon-separated list of macro-names
++# which are permitted to be overriden from the command-line which will be
++# honoured by the Exim user.  So these are macros that can persist to delivery
++# time.
++# Examples might be -DTLS or -DSPOOL=/some/dir.  The values on the
++# command-line are filtered to only permit: [A-Za-z0-9_/.-]*
++#
++# This option is highly likely to be removed in a future release.  It exists
++# only to make 4.73 as easy as possible to migrate to.  If you use it, we
++# encourage you to schedule time to rework your configuration to not depend
++# upon it.  Most people should not need to use this.
++#
++# By default, no macros are whitelisted for -D usage.
++
++# WHITELIST_D_MACROS=TLS:SPOOL
++
++#------------------------------------------------------------------------------
+ # Exim has support for the AUTH (authentication) extension of the SMTP
+ # protocol, as defined by RFC 2554. If you don't know what SMTP authentication
+ # is, you probably won't want to include this code, so you should leave these
+diff -up exim-4.63/src/buildconfig.c.privesc exim-4.63/src/buildconfig.c
+--- exim-4.63/src/buildconfig.c.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/src/buildconfig.c	2011-01-06 13:47:24.746118122 +0100
+@@ -769,10 +769,11 @@ while (fgets(buffer, sizeof(buffer), bas
+         fprintf(new, "\"%s\"\n", value);
+         }
+ 
+-      /* Timezone values and HEADERS_CHARSET get quoted */
++      /* Timezone values, HEADERS_CHARSET and WHITELIST_D_MACROS get quoted */
+ 
+       else if (strcmp(name, "TIMEZONE_DEFAULT") == 0||
+-               strcmp(name, "HEADERS_CHARSET") == 0)
++               strcmp(name, "HEADERS_CHARSET") == 0||
++	       strcmp(name, "WHITELIST_D_MACROS") == 0)
+         fprintf(new, "\"%s\"\n", value);
+ 
+       /* For others, quote any paths and don't quote anything else */
+diff -up exim-4.63/src/config.h.defaults.privesc exim-4.63/src/config.h.defaults
+--- exim-4.63/src/config.h.defaults.privesc	2011-01-06 13:47:24.698116250 +0100
++++ exim-4.63/src/config.h.defaults	2011-01-06 13:47:24.746118122 +0100
+@@ -16,7 +16,7 @@ it's a default value. */
+ #define ACL_MVARS                    20
+ 
+ #define ALT_CONFIG_PREFIX
+-#define ALT_CONFIG_ROOT_ONLY
++#define TRUSTED_CONFIG_LIST
+ 
+ #define APPENDFILE_MODE            0600
+ #define APPENDFILE_DIRECTORY_MODE  0700
+@@ -146,6 +146,8 @@ it's a default value. */
+ #define USE_TCP_WRAPPERS
+ #define USE_TDB
+ 
++#define WHITELIST_D_MACROS
++
+ #define WITH_CONTENT_SCAN
+ #define WITH_OLD_DEMIME
+ 
+@@ -161,5 +163,6 @@ just in case. */
+ #define DNS_MAXNAME                 256
+ #define EXPAND_MAXN                  20
+ #define ROOT_UID                      0
++#define ROOT_GID                      0
+ 
+ /* End of config.h.defaults */
+diff -up exim-4.63/src/daemon.c.privesc exim-4.63/src/daemon.c
+--- exim-4.63/src/daemon.c.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/src/daemon.c	2011-01-06 13:47:24.747118161 +0100
+@@ -421,6 +421,13 @@ if (pid == 0)
+ 
+   for (i = 0; i < listen_socket_count; i++) (void)close(listen_sockets[i]);
+ 
++  /* Set FD_CLOEXEC on the SMTP socket. We don't want any rogue child processes
++  to be able to communicate with them, under any circumstances. */
++  (void)fcntl(accept_socket, F_SETFD,
++              fcntl(accept_socket, F_GETFD) | FD_CLOEXEC);
++  (void)fcntl(dup_accept_socket, F_SETFD,
++              fcntl(dup_accept_socket, F_GETFD) | FD_CLOEXEC);
++
+   #ifdef SA_NOCLDWAIT
+   act.sa_handler = SIG_IGN;
+   sigemptyset(&(act.sa_mask));
+diff -up exim-4.63/src/exim.c.privesc exim-4.63/src/exim.c
+--- exim-4.63/src/exim.c.privesc	2006-07-31 16:19:48.000000000 +0200
++++ exim-4.63/src/exim.c	2011-01-06 13:47:24.750118278 +0100
+@@ -1230,6 +1230,117 @@ return yield;
+ 
+ 
+ /*************************************************
++*    Validate that the macros given are okay     *
++*************************************************/
++
++/* Typically, Exim will drop privileges if macros are supplied.  In some
++cases, we want to not do so.
++
++Arguments:    none (macros is a global)
++Returns:      true if trusted, false otherwise
++*/
++
++static BOOL
++macros_trusted(void)
++{
++#ifdef WHITELIST_D_MACROS
++macro_item *m;
++uschar *whitelisted, *end, *p, **whites, **w;
++int white_count, i, n;
++size_t len;
++BOOL prev_char_item, found;
++#endif
++
++if (macros == NULL)
++  return TRUE;
++#ifndef WHITELIST_D_MACROS
++return FALSE;
++#else
++
++/* We only trust -D overrides for some invoking users:
++root, the exim run-time user, the optional config owner user.
++I don't know why config-owner would be needed, but since they can own the
++config files anyway, there's no security risk to letting them override -D. */
++if ( ! ((real_uid == root_uid)
++     || (real_uid == exim_uid)
++#ifdef CONFIGURE_OWNER
++     || (real_uid == config_uid)
++#endif
++   ))
++  {
++  debug_printf("macros_trusted rejecting macros for uid %d\n", (int) real_uid);
++  return FALSE;
++  }
++
++/* Get a list of macros which are whitelisted */
++whitelisted = string_copy_malloc(US WHITELIST_D_MACROS);
++prev_char_item = FALSE;
++white_count = 0;
++for (p = whitelisted; *p != '\0'; ++p)
++  {
++  if (*p == ':' || isspace(*p))
++    {
++    *p = '\0';
++    if (prev_char_item)
++      ++white_count;
++    prev_char_item = FALSE;
++    continue;
++    }
++  if (!prev_char_item)
++    prev_char_item = TRUE;
++  }
++end = p;
++if (prev_char_item)
++  ++white_count;
++if (!white_count)
++  return FALSE;
++whites = store_malloc(sizeof(uschar *) * (white_count+1));
++for (p = whitelisted, i = 0; (p != end) && (i < white_count); ++p)
++  {
++  if (*p != '\0')
++    {
++    whites[i++] = p;
++    if (i == white_count)
++      break;
++    while (*p != '\0' && p < end)
++      ++p;
++    }
++  }
++whites[i] = NULL;
++
++/* The list of macros should be very short.  Accept the N*M complexity. */
++for (m = macros; m != NULL; m = m->next)
++  {
++  found = FALSE;
++  for (w = whites; *w; ++w)
++    if (Ustrcmp(*w, m->name) == 0)
++      {
++      found = TRUE;
++      break;
++      }
++  if (!found)
++    return FALSE;
++  if (m->replacement == NULL)
++    continue;
++  len = Ustrlen(m->replacement);
++  if (len == 0)
++    continue;
++  n = pcre_exec(regex_whitelisted_macro, NULL, CS m->replacement, len,
++   0, PCRE_EOPT, NULL, 0);
++  if (n < 0)
++    {
++    if (n != PCRE_ERROR_NOMATCH)
++      debug_printf("macros_trusted checking %s returned %d\n", m->name, n);
++    return FALSE;
++    }
++  }
++debug_printf("macros_trusted overriden to true by whitelisting\n");
++return TRUE;
++#endif
++}
++
++
++/*************************************************
+ *          Entry point and high-level code       *
+ *************************************************/
+ 
+@@ -1356,6 +1467,10 @@ if (!route_finduser(US CONFIGURE_OWNERNA
+   }
+ #endif
+ 
++/* We default the system_filter_user to be the Exim run-time user, as a
++sane non-root value. */
++system_filter_uid = exim_uid;
++
+ #ifdef CONFIGURE_GROUPNAME
+ if (!route_findgroup(US CONFIGURE_GROUPNAME, &config_gid))
+   {
+@@ -1500,6 +1615,15 @@ regex_smtp_code =
+   regex_must_compile(US"^\\d\\d\\d\\s(?:\\d\\.\\d\\d?\\d?\\.\\d\\d?\\d?\\s)?",
+     FALSE, TRUE);
+ 
++#ifdef WHITELIST_D_MACROS
++/* Precompile the regular expression used to filter the content of macros
++given to -D for permissibility. */
++
++regex_whitelisted_macro =
++  regex_must_compile(US"^[A-Za-z0-9_/.-]*$", FALSE, TRUE);
++#endif
++
++
+ /* If the program is called as "mailq" treat it as equivalent to "exim -bp";
+ this seems to be a generally accepted convention, since one finds symbolic
+ links called "mailq" in standard OS configurations. */
+@@ -1903,6 +2027,103 @@ for (i = 1; i < argc; i++)
+           }
+         }
+       #endif
++      if (real_uid != root_uid)
++        {
++        #ifdef TRUSTED_CONFIG_LIST
++
++        if (real_uid != exim_uid
++            #ifdef CONFIGURE_OWNER
++            && real_uid != config_uid
++            #endif
++            )
++          trusted_config = FALSE;
++        else
++          {
++          FILE *trust_list = Ufopen(TRUSTED_CONFIG_LIST, "rb");
++          if (trust_list)
++            {
++            struct stat statbuf;
++
++            if (fstat(fileno(trust_list), &statbuf) != 0 ||
++                (statbuf.st_uid != root_uid        /* owner not root */
++                 #ifdef CONFIGURE_OWNER
++                 && statbuf.st_uid != config_uid   /* owner not the special one */
++                 #endif
++                   ) ||                            /* or */
++                (statbuf.st_gid != root_gid        /* group not root */
++                 #ifdef CONFIGURE_GROUP
++                 && statbuf.st_gid != config_gid   /* group not the special one */
++                 #endif
++                 && (statbuf.st_mode & 020) != 0   /* group writeable */
++                   ) ||                            /* or */
++                (statbuf.st_mode & 2) != 0)        /* world writeable */
++              {
++              trusted_config = FALSE;
++              fclose(trust_list);
++              }
++	    else
++              {
++              /* Well, the trust list at least is up to scratch... */
++              void *reset_point = store_get(0);
++              uschar *trusted_configs[32];
++              int nr_configs = 0;
++              int i = 0;
++
++              while (Ufgets(big_buffer, big_buffer_size, trust_list))
++                {
++                uschar *start = big_buffer, *nl;
++                while (*start && isspace(*start))
++                start++;
++                if (*start != '/')
++                  continue;
++                nl = Ustrchr(start, '\n');
++                if (nl)
++                  *nl = 0;
++                trusted_configs[nr_configs++] = string_copy(start);
++                if (nr_configs == 32)
++                  break;
++                }
++              fclose(trust_list);
++
++              if (nr_configs)
++                {
++                int sep = 0;
++                uschar *list = argrest;
++                uschar *filename;
++                while (trusted_config && (filename = string_nextinlist(&list,
++                        &sep, big_buffer, big_buffer_size)) != NULL)
++                  {
++                  for (i=0; i < nr_configs; i++)
++                    {
++                    if (Ustrcmp(filename, trusted_configs[i]) == 0)
++                      break;
++                    }
++                  if (i == nr_configs)
++                    {
++                    trusted_config = FALSE;
++                    break;
++                    }
++                  }
++                store_reset(reset_point);
++                }
++              else
++                {
++                /* No valid prefixes found in trust_list file. */
++                trusted_config = FALSE;
++                }
++              }
++	    }
++          else
++            {
++            /* Could not open trust_list file. */
++            trusted_config = FALSE;
++            }
++          }
++      #else
++        /* Not root; don't trust config */
++        trusted_config = FALSE;
++      #endif
++        }
+ 
+       config_main_filelist = argrest;
+       config_changed = TRUE;
+@@ -3044,11 +3265,11 @@ if (setgroups(0, NULL) != 0)
+ 
+ /* If the configuration file name has been altered by an argument on the
+ command line (either a new file name or a macro definition) and the caller is
+-not root or the exim user, or if this is a filter testing run, remove any
+-setuid privilege the program has, and run as the underlying user.
++not root, or if this is a filter testing run, remove any setuid privilege the
++program has and run as the underlying user.
+ 
+-If ALT_CONFIG_ROOT_ONLY is defined, the exim user is locked out of this, which
+-severely restricts the use of -C for some purposes.
++The exim user is locked out of this, which severely restricts the use of -C
++for some purposes.
+ 
+ Otherwise, set the real ids to the effective values (should be root unless run
+ from inetd, which it can either be root or the exim uid, if one is configured).
+@@ -3060,11 +3281,9 @@ values (such as the path name). If runni
+ configuration file changes and macro definitions haven't happened. */
+ 
+ if ((                                            /* EITHER */
+-    (config_changed || macros != NULL) &&        /* Config changed, and */
++    (!trusted_config ||                          /* Config changed, or */
++     !macros_trusted()) &&                       /*  impermissible macros and */
+     real_uid != root_uid &&                      /* Not root, and */
+-    #ifndef ALT_CONFIG_ROOT_ONLY                 /* (when not locked out) */
+-    real_uid != exim_uid &&                      /* Not exim, and */
+-    #endif
+     !running_in_test_harness                     /* Not fudged */
+     ) ||                                         /*   OR   */
+     expansion_test                               /* expansion testing */
+@@ -3252,15 +3471,12 @@ else
+   }
+ 
+ /* Handle the case when we have removed the setuid privilege because of -C or
+--D. This means that the caller of Exim was not root, and, provided that
+-ALT_CONFIG_ROOT_ONLY is not defined, was not the Exim user that is built into
+-the binary.
+-
+-If ALT_CONFIG_ROOT_ONLY is not defined, there is a problem if it turns out we
+-were running as the exim user defined in the configuration file (different to
+-the one in the binary). The sysadmin may expect this case to retain privilege
+-because "the binary was called by the Exim user", but it hasn't, because of the
+-order in which it handles this stuff. There are two possibilities:
++-D. This means that the caller of Exim was not root.
++
++There is a problem if we were running as the Exim user. The sysadmin may
++expect this case to retain privilege because "the binary was called by the
++Exim user", but it hasn't, because either the -D option set macros, or the
++-C option set a non-trusted configuration file. There are two possibilities:
+ 
+   (1) If deliver_drop_privilege is set, Exim is not going to re-exec in order
+       to do message deliveries. Thus, the fact that it is running as a
+@@ -3272,27 +3488,18 @@ order in which it handles this stuff. Th
+ 
+   (2) If deliver_drop_privilege is not set, the configuration won't work as
+       apparently intended, and so we log a panic message. In order to retain
+-      root for -C or -D, the caller must either be root or the Exim user
+-      defined in the binary (when deliver_drop_ privilege is false).
+-
+-If ALT_CONFIG_ROOT_ONLY is defined, we don't know whether we were called by the
+-built-in exim user or one defined in the configuration. In either event,
+-re-enable log processing, assuming the sysadmin knows what they are doing. */
++      root for -C or -D, the caller must either be root or be invoking a
++      trusted configuration file (when deliver_drop_privilege is false). */
+ 
+-if (removed_privilege && (config_changed || macros != NULL) &&
++if (removed_privilege && (!trusted_config || macros != NULL) &&
+     real_uid == exim_uid)
+   {
+-  #ifdef ALT_CONFIG_ROOT_ONLY
+-  really_exim = TRUE;   /* let logging work normally */
+-  #else
+-
+   if (deliver_drop_privilege)
+     really_exim = TRUE; /* let logging work normally */
+   else
+     log_write(0, LOG_MAIN|LOG_PANIC,
+-      "exim user (uid=%d) is defined only at runtime; privilege lost for %s",
+-      (int)exim_uid, config_changed? "-C" : "-D");
+-  #endif
++      "exim user lost privilege for using %s option",
++      trusted_config? "-D" : "-C");
+   }
+ 
+ /* Start up Perl interpreter if Perl support is configured and there is a
+diff -up exim-4.63/src/globals.c.privesc exim-4.63/src/globals.c
+--- exim-4.63/src/globals.c.privesc	2011-01-06 13:47:24.700116327 +0100
++++ exim-4.63/src/globals.c	2011-01-06 13:47:24.752118356 +0100
+@@ -876,6 +876,9 @@ const pcre *regex_PIPELINING   = NULL;
+ const pcre *regex_SIZE         = NULL;
+ const pcre *regex_smtp_code    = NULL;
+ const pcre *regex_ismsgid      = NULL;
++#ifdef WHITELIST_D_MACROS
++const pcre *regex_whitelisted_macro = NULL;
++#endif
+ #ifdef WITH_CONTENT_SCAN
+ uschar *regex_match_string     = NULL;
+ #endif
+@@ -892,6 +895,7 @@ int     rewrite_existflags     = 0;
+ uschar *rfc1413_hosts          = US"*";
+ int     rfc1413_query_timeout  = 5;
+ /* BOOL    rfc821_domains         = FALSE;  <<< on the way out */
++uid_t   root_gid               = ROOT_GID;
+ uid_t   root_uid               = ROOT_UID;
+ 
+ router_instance  *routers  = NULL;
+@@ -1126,7 +1130,7 @@ uschar *system_filter_reply_transport = 
+ 
+ gid_t   system_filter_gid      = 0;
+ BOOL    system_filter_gid_set  = FALSE;
+-uid_t   system_filter_uid      = 0;
++uid_t   system_filter_uid      = (uid_t)-1;
+ BOOL    system_filter_uid_set  = FALSE;
+ BOOL    system_filtering       = FALSE;
+ 
+@@ -1201,6 +1205,7 @@ tree_node  *tree_nonrecipients = NULL;
+ tree_node  *tree_unusable      = NULL;
+ 
+ BOOL    trusted_caller         = FALSE;
++BOOL    trusted_config         = TRUE;
+ gid_t  *trusted_groups         = NULL;
+ uid_t  *trusted_users          = NULL;
+ uschar *timezone_string        = US TIMEZONE_DEFAULT;
+diff -up exim-4.63/src/globals.h.privesc exim-4.63/src/globals.h
+--- exim-4.63/src/globals.h.privesc	2011-01-06 13:47:24.701116366 +0100
++++ exim-4.63/src/globals.h	2011-01-06 13:47:24.753118395 +0100
+@@ -561,6 +561,9 @@ extern const pcre  *regex_PIPELINING;  /
+ extern const pcre  *regex_SIZE;        /* For recognizing SIZE settings */
+ extern const pcre  *regex_smtp_code;   /* For recognizing SMTP codes */
+ extern const pcre  *regex_ismsgid;     /* Compiled r.e. for message it */
++#ifdef WHITELIST_D_MACROS
++extern const pcre  *regex_whitelisted_macro; /* For -D macro values */
++#endif
+ #ifdef WITH_CONTENT_SCAN
+ extern uschar *regex_match_string;     /* regex that matched a line (regex ACL condition) */
+ #endif
+@@ -577,6 +580,7 @@ extern int     rewrite_existflags;     /
+ extern uschar *rfc1413_hosts;          /* RFC hosts */
+ extern int     rfc1413_query_timeout;  /* Timeout on RFC 1413 calls */
+ /* extern BOOL    rfc821_domains;  */       /* If set, syntax is 821, not 822 => being abolished */
++extern uid_t   root_gid;               /* The gid for root */
+ extern uid_t   root_uid;               /* The uid for root */
+ extern router_info routers_available[];/* Vector of available routers */
+ extern router_instance *routers;       /* Chain of instantiated routers */
+@@ -737,6 +741,7 @@ extern tree_node *tree_nonrecipients;  /
+ extern tree_node *tree_unusable;       /* Tree of unusable addresses */
+ 
+ extern BOOL    trusted_caller;         /* Caller is trusted */
++extern BOOL    trusted_config;         /* Configuration file is trusted */
+ extern gid_t  *trusted_groups;         /* List of trusted groups */
+ extern uid_t  *trusted_users;          /* List of trusted users */
+ extern uschar *timezone_string;        /* Required timezone setting */
+diff -up exim-4.63/src/readconf.c.privesc exim-4.63/src/readconf.c
+--- exim-4.63/src/readconf.c.privesc	2011-01-06 13:47:24.707116601 +0100
++++ exim-4.63/src/readconf.c	2011-01-06 13:47:24.755118473 +0100
+@@ -2755,22 +2755,21 @@ else
+       "configuration file %s", filename));
+   }
+ 
+-/* Check the status of the file we have opened, unless it was specified on
+-the command line, in which case privilege was given away at the start. */
++/* Check the status of the file we have opened, if we have retained root
++privileges. */
+ 
+-if (!config_changed)
++if (trusted_config)
+   {
+   if (fstat(fileno(config_file), &statbuf) != 0)
+     log_write(0, LOG_MAIN|LOG_PANIC_DIE, "failed to stat configuration file %s",
+       big_buffer);
+ 
+-  if ((statbuf.st_uid != root_uid &&             /* owner not root */
+-       statbuf.st_uid != exim_uid                /* owner not exim */
++  if ((statbuf.st_uid != root_uid                /* owner not root */
+        #ifdef CONFIGURE_OWNER
+        && statbuf.st_uid != config_uid           /* owner not the special one */
+        #endif
+          ) ||                                    /* or */
+-      (statbuf.st_gid != exim_gid                /* group not exim & */
++      (statbuf.st_gid != root_gid                /* group not root & */
+        #ifdef CONFIGURE_GROUP
+        && statbuf.st_gid != config_gid           /* group not the special one */
+        #endif

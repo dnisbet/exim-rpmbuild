@@ -1,0 +1,48 @@
+Index: src/libspf2/spf_dns_resolv.c
+--- src/libspf2/spf_dns_resolv.c.orig	2008-10-27 17:26:06 +0100
++++ src/libspf2/spf_dns_resolv.c	2008-11-05 09:08:02 +0100
+@@ -94,7 +94,7 @@
+ {
+ #if HAVE_DECL_RES_NDESTROY
+ 	res_ndestroy( (struct __res_state *)arg );
+-#else
++#elif defined(HAVE_DECL_RES_NINIT)
+ 	res_nclose( (struct __res_state *)arg );
+ #endif
+ 	free(arg);
+@@ -265,6 +265,10 @@
+ 	else {
+ 		res_state = (struct __res_state *)res_spec;
+ 	}
++#else
++    if (res_init() != 0) {
++        SPF_error("Failed to call res_init()");
++    }
+ #endif
+ 
+ 	responselen = 2048;
+Index: src/libspf2/spf_request.c
+--- src/libspf2/spf_request.c.orig	2008-11-03 21:34:14 +0100
++++ src/libspf2/spf_request.c	2008-11-05 09:06:48 +0100
+@@ -347,6 +347,9 @@
+ 	char			*record;
+ 	size_t			 len;
+ 
++    if ( (spf_request == NULL) || (rcpt_to == NULL) )
++        return SPF_E_INVALID_OPT;
++
+ 	SPF_ASSERT_NOTNULL(spf_request);
+ 	spf_server = spf_request->spf_server;
+ 	SPF_ASSERT_NOTNULL(spf_server);
+Index: src/libspf2/spf_response.c
+--- src/libspf2/spf_response.c.orig	2008-09-27 23:34:37 +0200
++++ src/libspf2/spf_response.c	2008-11-05 09:06:48 +0100
+@@ -134,6 +134,8 @@
+ SPF_result_t
+ SPF_response_result(SPF_response_t *rp)
+ {
++    if (rp == NULL)
++        return SPF_RESULT_NONE;
+ 	return rp->result;
+ }
+ 

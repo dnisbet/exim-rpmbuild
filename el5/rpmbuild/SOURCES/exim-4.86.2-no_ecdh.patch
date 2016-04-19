@@ -1,0 +1,12 @@
+--- src/tls-openssl.c-orig	2016-04-15 14:46:45.000000000 +0100
++++ src/tls-openssl.c	2016-04-15 14:47:27.000000000 +0100
+@@ -659,7 +659,9 @@
+ static BOOL
+ init_ecdh(SSL_CTX * sctx, host_item * host)
+ {
++#ifndef OPENSSL_NO_ECDH
+ EC_KEY * ecdh;
++#endif
+ uschar * exp_curve;
+ int nid;
+ BOOL rv;
