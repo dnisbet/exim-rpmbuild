@@ -1,2 +1,2 @@
 # exim-rpmbuild
-Building el5 rpms of exim
+Building el rpms of exim
